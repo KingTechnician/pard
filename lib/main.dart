@@ -45,7 +45,7 @@ class Home extends StatelessWidget {
           ),
         ),
         floatingActionButton:
-            FloatingActionButton(onPressed: () => {Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return NewQuestModal();}))}, tooltip: 'Increment',child: const Icon(Icons.add),),
+            FloatingActionButton(onPressed: () => {Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return NewQuestModal();}))}, tooltip: 'Add Quest',child: const Icon(Icons.add),),
             drawer:
             Drawer(
                 child: ListView(
@@ -76,6 +76,7 @@ class Home extends StatelessWidget {
       ListTile(leading:const Icon(Icons.settings),title:const Text("Settings"),onTap:(){}),
       ListTile(leading:const Icon(Icons.change_circle),title:const Text("Changelog"),onTap:(){}),
       ListTile(leading:const Icon(Icons.info),title:const Text("About"),onTap:(){}),
+      ListTile(leading:const Icon(Icons.logout),title:const Text("Logout"),onTap:(){Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Login();}));}),
     ],
   ),
             )
@@ -123,6 +124,123 @@ class NewQuestModal extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class ForgotPassword extends StatelessWidget
+{
+  const ForgotPassword({Key? key}) : super(key:key);
+  @override
+  Widget build(BuildContext context)
+  {
+    return Stack(
+      children:[buildBackgroundImage(),ForgotPasswordContent()]);
+  }
+}
+
+class ForgotPasswordContent extends  StatelessWidget
+{
+  const ForgotPasswordContent({Key? key}) : super(key:key);
+  @override
+  Widget build(BuildContext context)
+  {
+    return Scaffold(
+      appBar: AppBar(
+        title:Text("Forgot Password"),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment:MainAxisAlignment.center,
+            children:[
+              TextFormField(
+                decoration:InputDecoration(
+                  labelText:"Email",
+                )
+              ),
+              SizedBox(height:16.0),
+              ElevatedButton(
+                child:Text("Send Reset Email"),
+                onPressed:(){Navigator.push(context, MaterialPageRoute(builder:(BuildContext context){return Login();}));},
+              )
+            ]
+          )
+        )
+      )
+    );
+  }
+}
+
+class Register extends StatelessWidget
+{
+  const Register({Key? key}) : super(key:key);
+  @override
+  Widget build(BuildContext context)
+  {
+    return Stack(
+      children:[buildBackgroundImage(),RegisterContent()]);
+  }
+}
+
+class RegisterContent extends StatelessWidget {
+  const RegisterContent({super.key});
+
+  @override
+  Widget build(BuildContext context)
+  {
+    return Scaffold(
+      appBar:AppBar(title:Text("Register")),
+      body:Center(
+        child: Padding(padding: const EdgeInsets.all(16.0),
+          child:Column(
+            mainAxisAlignment:MainAxisAlignment.center,
+            children:
+            [
+              TextFormField(
+                decoration:InputDecoration(
+                  labelText:'Email',
+                ),
+              ),
+              SizedBox(height:16.0),
+              TextFormField(
+                decoration:InputDecoration(
+                  labelText:'Password',
+                ),
+                obscureText:true,
+              ),
+              SizedBox(height:16.0),
+              TextFormField(
+                decoration:InputDecoration(
+                  labelText:'Confirm Password',
+                ),
+                obscureText:true,
+              ),
+              SizedBox(height:16.0),
+              Row(
+                children:
+                [
+                  Checkbox(
+                    value:false,
+                    onChanged:(value){},
+                  ),
+                  Text('I agree to the Terms of Service'),
+                ],
+              ),
+              SizedBox(height:16.0),
+              // ignore: prefer_const_constructors, prefer_const_literals_to_create_immutables
+              TextButton(onPressed:(){Navigator.push(context, MaterialPageRoute(builder:(BuildContext context){return Login();}));}, child:Text("Already have an account? Login here!")),
+              ElevatedButton(
+                onPressed:()
+                {
+                  Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
+                  // Implement sign-in functionality here
+                  // Perform sign-in logic
+                },
+                child:Text('Sign Up'),
+              ),
+            ],
+            )),));
   }
 }
 
@@ -177,6 +295,9 @@ class LoginContent extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 16.0),
+              // ignore: prefer_const_constructors, prefer_const_literals_to_create_immutables
+              TextButton(onPressed:(){Navigator.push(context, MaterialPageRoute(builder:(BuildContext context){return Register();}));}, child:Text("Don't have an account? Sign up here!")),
+              TextButton(onPressed:(){Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return ForgotPassword();}));}, child:Text("Forgot Password?"),),
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
