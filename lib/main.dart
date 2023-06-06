@@ -1,6 +1,7 @@
 
 import 'dart:ui';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'color_schemes.g.dart';
 
@@ -38,7 +39,7 @@ class Home extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
               Text(
-                'Update with your UI',
+                'Welcome! Click the button on the bottom right and get started.',
               ),
             ],
           ),
@@ -52,9 +53,9 @@ class Home extends StatelessWidget {
     padding: EdgeInsets.zero,
     children: [
       const DrawerHeader(
-        child: Text('Drawer Header'),
+        child: Text('Menu'),
       ),
-      Text("Quest Reports:",style:TextStyle(fontWeight:FontWeight.bold,fontSize:20)),
+      Text("Quests",style:TextStyle(fontWeight:FontWeight.bold,fontSize:20)),
       Divider(color:darkColorScheme.primary),
       ListTile(
         title: const Text('Item 1'),
@@ -71,6 +72,7 @@ class Home extends StatelessWidget {
         },
       ),
       Divider(color:darkColorScheme.primary),
+      ListTile(leading:const Icon(Icons.person),title:const Text("Equipment"),onTap:(){}),
       ListTile(leading:const Icon(Icons.settings),title:const Text("Settings"),onTap:(){}),
       ListTile(leading:const Icon(Icons.change_circle),title:const Text("Changelog"),onTap:(){}),
       ListTile(leading:const Icon(Icons.info),title:const Text("About"),onTap:(){}),
@@ -118,6 +120,73 @@ class NewQuestModal extends StatelessWidget {
             Navigator.of(context).pop();
           },
           child: Text('Close'),
+        ),
+      ),
+    );
+  }
+}
+
+class Login extends StatelessWidget
+{
+  const Login({Key? key}) : super(key:key);
+  @override
+  Widget build(BuildContext context)
+  {
+    return Stack(
+      children:[buildBackgroundImage(),LoginContent()]);
+  }
+}
+
+class LoginContent extends StatelessWidget {
+  const LoginContent({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Login'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                ),
+              ),
+              SizedBox(height: 16.0),
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                ),
+                obscureText: true,
+              ),
+              SizedBox(height: 16.0),
+              Row(
+                children: [
+                  Checkbox(
+                    value: false,
+                    onChanged: (value) {},
+                  ),
+                  Text('I agree to the Terms of Service'),
+                ],
+              ),
+              SizedBox(height: 16.0),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
+                  // Implement sign-in functionality here
+                  // Perform sign-in logic
+                },
+                child: Text('Sign In'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -176,7 +245,7 @@ Widget landingPageContent(BuildContext context, CrossAxisAlignment crossAxisAlig
         SizedBox(height:32),
         ButtonTheme(minWidth:300.0,height:100.0,child:ElevatedButton(onPressed: (){Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const Home()),
+          MaterialPageRoute(builder: (context) => const Login()),
         );}, child:Text("Get Started")))
       ]
     ));

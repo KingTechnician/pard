@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "260171774383",
+    "project_id": "pard-bc478",
+    "storage_bucket": "pard-bc478.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:260171774383:android:fc9d51dbcc2c171534975a",
+        "android_client_info": {
+          "package_name": "com.example.pard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "260171774383-7bsiphj950esu93ilh8p0qlfc76ogood.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCANMXTBN8HOh58r3_VBQZEFYOpzOxzBUk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "260171774383-7bsiphj950esu93ilh8p0qlfc76ogood.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
