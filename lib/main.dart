@@ -1,11 +1,15 @@
 
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'color_schemes.g.dart';
 
-void main() {
+void main()  async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options:DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -26,6 +30,9 @@ class MyApp extends StatelessWidget {
 class Home extends StatelessWidget {
   const Home({Key? key}) : super(key: key);
 
+  static const snackBar = SnackBar(content:Text("Welcome to the Pard application!"));
+
+  
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -55,13 +62,14 @@ class Home extends StatelessWidget {
       const DrawerHeader(
         child: Text('Menu'),
       ),
-      Text("Quests",style:TextStyle(fontWeight:FontWeight.bold,fontSize:20)),
+      Text("Open Quests",style:TextStyle(fontWeight:FontWeight.bold,fontSize:20)),
       Divider(color:darkColorScheme.primary),
       ListTile(
         title: const Text('Item 1'),
         onTap: () {
           // Update the state of the app.
           // ...
+          
         },
       ),
       ListTile(
@@ -172,6 +180,8 @@ class ForgotPasswordContent extends  StatelessWidget
   }
 }
 
+
+
 class Register extends StatelessWidget
 {
   const Register({Key? key}) : super(key:key);
@@ -183,8 +193,41 @@ class Register extends StatelessWidget
   }
 }
 
-class RegisterContent extends StatelessWidget {
+class RegisterContent extends StatefulWidget {
   const RegisterContent({super.key});
+  static bool termsAgreed = false;
+  static bool showPassword = false;
+  static final _auth = FirebaseAuth.instance;
+  static final TextEditingController _emailController = TextEditingController();
+  static final String emailChoice = _emailController.text;
+
+  static final TextEditingController _passwordController = TextEditingController();
+  static String passwordChoice = _passwordController.text;
+
+  static final TextEditingController _confirmPasswordController = TextEditingController();
+  static String confirmPasswordChoice = _confirmPasswordController.text;
+
+  @override
+  State<RegisterContent> createState() => _RegisterContentState();
+}
+
+class _RegisterContentState extends State<RegisterContent> {
+  void registerFirebaseAccount(String email, String password, String confirmPassword,FirebaseAuth auth,BuildContext context)
+async{
+  if(password.compareTo(confirmPassword)==0)
+  {
+    try
+    {
+      await auth.createUserWithEmailAndPassword(email:email,password:password);
+      Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Login();}));
+    }
+    catch(e)
+    {
+      print(e);
+    }
+    return;
+  }
+}
 
   @override
   Widget build(BuildContext context)
@@ -198,31 +241,41 @@ class RegisterContent extends StatelessWidget {
             children:
             [
               TextFormField(
+                controller: RegisterContent._emailController,
                 decoration:InputDecoration(
                   labelText:'Email',
                 ),
               ),
               SizedBox(height:16.0),
               TextFormField(
+                controller: RegisterContent._passwordController,
                 decoration:InputDecoration(
                   labelText:'Password',
                 ),
-                obscureText:true,
+                obscureText:!RegisterContent.showPassword,
               ),
               SizedBox(height:16.0),
               TextFormField(
+                controller: RegisterContent._confirmPasswordController,
                 decoration:InputDecoration(
                   labelText:'Confirm Password',
                 ),
-                obscureText:true,
+                obscureText:!RegisterContent.showPassword,
               ),
               SizedBox(height:16.0),
               Row(
                 children:
                 [
+                  Checkbox(value:RegisterContent.showPassword,onChanged:(value){setState((){RegisterContent.showPassword=value!;});}),
+                  Text("Show password")
+                ]
+              ),
+              Row(
+                children:
+                [
                   Checkbox(
-                    value:false,
-                    onChanged:(value){},
+                    value:RegisterContent.termsAgreed,
+                    onChanged:(value){setState((){RegisterContent.termsAgreed=value!;});},
                   ),
                   Text('I agree to the Terms of Service'),
                 ],
@@ -233,7 +286,8 @@ class RegisterContent extends StatelessWidget {
               ElevatedButton(
                 onPressed:()
                 {
-                  Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
+                  registerFirebaseAccount(RegisterContent.emailChoice,RegisterContent._passwordController.text,RegisterContent._confirmPasswordController.text,RegisterContent._auth,context);
+                  //Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
                   // Implement sign-in functionality here
                   // Perform sign-in logic
                 },
@@ -255,11 +309,35 @@ class Login extends StatelessWidget
   }
 }
 
-class LoginContent extends StatelessWidget {
+class LoginContent extends StatefulWidget {
+  static final _auth = FirebaseAuth.instance;
+  static bool showPassword = false;
+  static final TextEditingController _emailController = TextEditingController();
+  static final String emailChoice = _emailController.text;
+
+  static final TextEditingController _passwordController = TextEditingController();
+  static String passwordChoice = _passwordController.text;
   const LoginContent({
     super.key,
   });
 
+  @override
+  State<LoginContent> createState() => _LoginContentState();
+}
+
+class _LoginContentState extends State<LoginContent> {
+  void loginFirebaseAccount(String username,String password, BuildContext context)
+  {
+    try
+    {
+      LoginContent._auth.signInWithEmailAndPassword(email:username,password:password);
+      Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
+    }
+    catch(e)
+    {
+      print(e);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -273,25 +351,27 @@ class LoginContent extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextFormField(
+                controller:LoginContent._emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
                 ),
               ),
               SizedBox(height: 16.0),
               TextFormField(
+                controller:LoginContent._passwordController,
                 decoration: InputDecoration(
                   labelText: 'Password',
                 ),
-                obscureText: true,
+                obscureText: !LoginContent.showPassword,
               ),
               SizedBox(height: 16.0),
               Row(
                 children: [
                   Checkbox(
-                    value: false,
-                    onChanged: (value) {},
+                    value: LoginContent.showPassword,
+                    onChanged: (value) {setState((){LoginContent.showPassword=value!;});},
                   ),
-                  Text('I agree to the Terms of Service'),
+                  Text('Show password'),
                 ],
               ),
               SizedBox(height: 16.0),
@@ -300,7 +380,7 @@ class LoginContent extends StatelessWidget {
               TextButton(onPressed:(){Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return ForgotPassword();}));}, child:Text("Forgot Password?"),),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
+                  loginFirebaseAccount(LoginContent.emailChoice,LoginContent.passwordChoice,context);
                   // Implement sign-in functionality here
                   // Perform sign-in logic
                 },
