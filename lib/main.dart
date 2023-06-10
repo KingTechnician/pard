@@ -1,11 +1,18 @@
 
+import 'dart:collection';
+import 'dart:convert';
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
+import 'package:animated_snack_bar/animated_snack_bar.dart';
+import 'package:pard/main.dart';
 import 'firebase_options.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'color_schemes.g.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+
 
 void main()  async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,13 +34,37 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class Home extends StatelessWidget {
-  const Home({Key? key}) : super(key: key);
-
+class Home extends StatefulWidget {
+  Home({Key? key}) : super(key: key);
   static const snackBar = SnackBar(content:Text("Welcome to the Pard application!"));
-
   
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  var items =[];
+  var questChoices = [];
+  Future<void> readJson() async
+  {
+    final String response = await rootBundle.loadString('assets/fullQuests.json');
+    final data = await json.decode(response);
+    setState(()
+    {
+      var grabItems = Map.from(data);
+      for ( var i in grabItems.keys)
+      {
+        items.add(grabItems[i]);
+      }
+    });
+  }
   // This widget is the root of your application.
+  @override
+  void initState()
+  {
+    super.initState();
+    readJson();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,7 +83,7 @@ class Home extends StatelessWidget {
           ),
         ),
         floatingActionButton:
-            FloatingActionButton(onPressed: () => {Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return NewQuestModal();}))}, tooltip: 'Add Quest',child: const Icon(Icons.add),),
+            FloatingActionButton(onPressed: () => {Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return NewQuestModal(quests:items,filteredQuests:items);}))}, tooltip: 'Add Quest',child: const Icon(Icons.add),),
             drawer:
             Drawer(
                 child: ListView(
@@ -60,7 +91,7 @@ class Home extends StatelessWidget {
     padding: EdgeInsets.zero,
     children: [
       const DrawerHeader(
-        child: Text('Menu'),
+        child: Text("Menu"),
       ),
       Text("Open Quests",style:TextStyle(fontWeight:FontWeight.bold,fontSize:20)),
       Divider(color:darkColorScheme.primary),
@@ -84,7 +115,7 @@ class Home extends StatelessWidget {
       ListTile(leading:const Icon(Icons.settings),title:const Text("Settings"),onTap:(){}),
       ListTile(leading:const Icon(Icons.change_circle),title:const Text("Changelog"),onTap:(){}),
       ListTile(leading:const Icon(Icons.info),title:const Text("About"),onTap:(){}),
-      ListTile(leading:const Icon(Icons.logout),title:const Text("Logout"),onTap:(){Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Login();}));}),
+      ListTile(leading:const Icon(Icons.logout),title:const Text("Logout"),onTap:(){LandingPage.auth.signOut();Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Login();}));}),
     ],
   ),
             )
@@ -92,8 +123,15 @@ class Home extends StatelessWidget {
   }
 }
 
-class LandingPage extends StatelessWidget{
+class LandingPage extends StatefulWidget{
   const LandingPage({Key? key}) : super(key: key);
+  static final auth = FirebaseAuth.instance;
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+
   @override
   Widget build(BuildContext context)
   {
@@ -115,22 +153,148 @@ class LandingPage extends StatelessWidget{
   }
 }
 
+Widget QuestList(List items)
+{
+  return ListView.builder(
+    itemCount:items.length,
+    itemBuilder:(context,index)
+    {
+      final item = items[index];
 
-class NewQuestModal extends StatelessWidget {
+      return ListTile(title:item["name"],onTap:(){});
+    }
+  );
+}
+
+
+class NewQuestModal extends StatefulWidget {
+  List<dynamic> quests;
+  List<dynamic> filteredQuests;
+  NewQuestModal({required this.quests,required this.filteredQuests});
+
+  @override
+  State<NewQuestModal> createState() => _NewQuestModalState();
+}
+
+class _NewQuestModalState extends State<NewQuestModal> {
+  List<dynamic> get quests => widget.quests;
+  List<dynamic> get filteredQuests => widget.filteredQuests;
+
+  set quests(List<dynamic> value) {
+    widget.quests = value;
+  }
+
+  set filteredQuests(List<dynamic> value)
+  {
+    widget.filteredQuests = value;
+  }
+
+  final ScrollController scrollController = ScrollController();
+  final TextEditingController searchController = TextEditingController();
+  int nextIndex = 0;
+  int batchSize = 20;
+  var subTitleStyle = TextStyle(fontSize:15,fontWeight:FontWeight.bold);
+
+  void scrollListener()
+  {
+    if(scrollController.offset >= scrollController.position.maxScrollExtent && !scrollController.position.outOfRange)
+    {
+      setState(()
+      {
+        nextIndex += batchSize;
+      });
+    }
+  }
+
+  void loadMoreData()
+  {
+    setState(()
+    {
+      nextIndex += batchSize;
+    });
+  }
+
+  @override
+  void initState()
+  {
+    super.initState();
+    scrollController.addListener(scrollListener);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Modal Dialog'),
+        title:TextFormField(
+          controller:searchController,
+          decoration:InputDecoration(labelText:"Search here..."),
+          onChanged:(value)
+          {
+            setState(()
+            {
+              filteredQuests = quests.where((element) => element["name"].contains(searchController.text)).toList();
+            });
+          }),
+        actions:
+        [
+          IconButton(onPressed:(){},icon:const Icon(Icons.filter_alt)),
+        ]
       ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: Text('Close'),
+      body: Container(
+        height:1300,
+        child: ListView.builder(
+          itemCount:filteredQuests.length,
+          itemBuilder:(context,index)
+          {
+            
+            return ExpansionTile(title:Text(filteredQuests[index]["name"]),children:
+            [
+              Container(
+                color:Colors.black12,
+                padding:EdgeInsets.all(20),
+                width:double.infinity,
+                child: Column(
+                  children: [
+                    Row(children:
+                    [
+                      Text(filteredQuests[index]["stars"].toString()),
+                      Icon(Icons.star),
+                      Text("${" "+filteredQuests[index]["rank"]+" "+filteredQuests[index]["category"]+" "+filteredQuests[index]["quest_type"]} quest")
+                    ],
+                    ),
+                    Text("Location: "+filteredQuests[index]["location"],style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
+                    Text("Monsters",style:subTitleStyle),
+                    ListView.builder(
+                      shrinkWrap:true,
+                      physics:ClampingScrollPhysics(),
+                      itemCount:filteredQuests[index]["monsters"].length,
+                      itemBuilder:(monsterContext,monsterIndex)
+                      {
+                        if(monsterIndex==filteredQuests[index]["monsters"].length)
+                        {
+                          if(quests[index]["monsters"].length<100)
+                          {
+                            return const Center(child:CircularProgressIndicator(),);
+                          }
+                          else
+                          {
+                            return const SizedBox.shrink();
+                          }
+                        }
+                        String required = filteredQuests[index]["monsters"][monsterIndex]["is_objective"] ? "Required" : "Not Required";
+                        return ListTile(
+                          title:Text("${filteredQuests[index]["monsters"][monsterIndex]["monster_name"]} (${required})"),
+                          leading: Image.asset("assets/images/${filteredQuests[index]["monsters"][monsterIndex]["monster_id"]}.png"));
+                      }
+                    ),
+                    Text("Prize: "+filteredQuests[index]["zenny"].toString()+" zenny"),
+                    ElevatedButton(onPressed:(){},child:Text("Choose this quest")),
+                  ],
+                ),
+              )
+            ]);
+          }
         ),
-      ),
+      )
     );
   }
 }
@@ -146,9 +310,35 @@ class ForgotPassword extends StatelessWidget
   }
 }
 
-class ForgotPasswordContent extends  StatelessWidget
+class ForgotPasswordContent extends  StatefulWidget
 {
   const ForgotPasswordContent({Key? key}) : super(key:key);
+  static final TextEditingController _emailController=  TextEditingController();
+
+  @override
+  State<ForgotPasswordContent> createState() => _ForgotPasswordContentState();
+}
+
+class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
+  Future<void> sendPasswordResetEmail(BuildContext context) async
+  {
+    await LandingPage.auth.sendPasswordResetEmail(email:ForgotPasswordContent._emailController.text)
+    .then((value)
+    {
+      AnimatedSnackBar.rectangle("Success",
+      "Reset email sent!",
+      type:AnimatedSnackBarType.success,
+      brightness:Brightness.dark).show(context);
+      Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Login();}));
+    })
+    .then((error)
+    {
+      AnimatedSnackBar.rectangle("Error",
+      error.toString(),
+      type:AnimatedSnackBarType.error,
+      brightness:Brightness.dark).show(context);
+    });
+  }
   @override
   Widget build(BuildContext context)
   {
@@ -163,6 +353,7 @@ class ForgotPasswordContent extends  StatelessWidget
             mainAxisAlignment:MainAxisAlignment.center,
             children:[
               TextFormField(
+                controller:ForgotPasswordContent._emailController,
                 decoration:InputDecoration(
                   labelText:"Email",
                 )
@@ -170,7 +361,10 @@ class ForgotPasswordContent extends  StatelessWidget
               SizedBox(height:16.0),
               ElevatedButton(
                 child:Text("Send Reset Email"),
-                onPressed:(){Navigator.push(context, MaterialPageRoute(builder:(BuildContext context){return Login();}));},
+                onPressed:()
+                {
+                  sendPasswordResetEmail(context);
+                },
               )
             ]
           )
@@ -212,18 +406,21 @@ class RegisterContent extends StatefulWidget {
 }
 
 class _RegisterContentState extends State<RegisterContent> {
-  void registerFirebaseAccount(String email, String password, String confirmPassword,FirebaseAuth auth,BuildContext context)
+  void registerFirebaseAccount(String email, String password, String confirmPassword,BuildContext context)
 async{
   if(password.compareTo(confirmPassword)==0)
   {
     try
     {
-      await auth.createUserWithEmailAndPassword(email:email,password:password);
+      await LandingPage.auth.createUserWithEmailAndPassword(email:email,password:password);
       Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Login();}));
     }
     catch(e)
     {
-      print(e);
+      AnimatedSnackBar.rectangle("Error",
+      e.toString(),
+      type:AnimatedSnackBarType.error,
+      brightness:Brightness.dark).show(context);
     }
     return;
   }
@@ -286,7 +483,7 @@ async{
               ElevatedButton(
                 onPressed:()
                 {
-                  registerFirebaseAccount(RegisterContent.emailChoice,RegisterContent._passwordController.text,RegisterContent._confirmPasswordController.text,RegisterContent._auth,context);
+                  registerFirebaseAccount(RegisterContent.emailChoice,RegisterContent._passwordController.text,RegisterContent._confirmPasswordController.text,context);
                   //Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
                   // Implement sign-in functionality here
                   // Perform sign-in logic
@@ -310,11 +507,10 @@ class Login extends StatelessWidget
 }
 
 class LoginContent extends StatefulWidget {
-  static final _auth = FirebaseAuth.instance;
+  
   static bool showPassword = false;
   static final TextEditingController _emailController = TextEditingController();
   static final String emailChoice = _emailController.text;
-
   static final TextEditingController _passwordController = TextEditingController();
   static String passwordChoice = _passwordController.text;
   const LoginContent({
@@ -326,20 +522,31 @@ class LoginContent extends StatefulWidget {
 }
 
 class _LoginContentState extends State<LoginContent> {
-  void loginFirebaseAccount(String username,String password, BuildContext context)
-  {
-    try
-    {
-      LoginContent._auth.signInWithEmailAndPassword(email:username,password:password);
+  get auth => FirebaseAuth.instance;
+  get snackBar => AnimatedSnackBar;
+  Future<void> loginFirebaseAccount(String username,String password, BuildContext context)
+  async {
+    await LandingPage.auth.signInWithEmailAndPassword(email:LoginContent._emailController.text,password:LoginContent._passwordController.text)
+    .then((value) {
+      LoginContent._emailController.text = "";
+      LoginContent._passwordController.text = "";
+      AnimatedSnackBar.rectangle("Success",
+      "Successfully signed in!",
+      type:AnimatedSnackBarType.success,
+      brightness:Brightness.dark,).show(context);
       Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
-    }
-    catch(e)
+    },)
+    .catchError((error)
     {
-      print(e);
-    }
+      AnimatedSnackBar.rectangle("Error",
+      error.toString(),
+      type:AnimatedSnackBarType.error,
+      brightness:Brightness.dark).show(context);
+    });
   }
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('Login'),
@@ -444,10 +651,17 @@ Widget landingPageContent(BuildContext context, CrossAxisAlignment crossAxisAlig
         SizedBox(height:16),
         SentMessage(message:"Need some advice for your next quest? Click or tap the button below to get started!"),
         SizedBox(height:32),
-        ButtonTheme(minWidth:300.0,height:100.0,child:ElevatedButton(onPressed: (){Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const Login()),
-        );}, child:Text("Get Started")))
+        ButtonTheme(minWidth:300.0,height:100.0,child:ElevatedButton(onPressed: ()
+        {
+          if(LandingPage.auth.currentUser!=null)
+          {
+            Navigator.push(context,MaterialPageRoute(builder:(BuildContext context){return Home();}));
+          }
+          else
+          {
+            Navigator.push(context,MaterialPageRoute(builder: (context) => const Login()));
+          }
+        }, child:Text("Get Started")))
       ]
     ));
 }
