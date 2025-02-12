@@ -45,3 +45,4 @@ app.*.map.json
 
 #Firebase API Settings
 /lib/firebase_options.dart
+/lib/discord_options.dart
